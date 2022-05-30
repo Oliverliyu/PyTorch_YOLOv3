@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+
 
 from __future__ import division
 
@@ -60,20 +60,25 @@ def _create_data_loader(img_path, batch_size, img_size, n_cpu, multiscale_traini
 def run():
     print_environment_info()
     parser = argparse.ArgumentParser(description="Trains the YOLO model.")
-    parser.add_argument("-m", "--model", type=str, default="config/yolov3.cfg", help="Path to model definition file (.cfg)")
-    parser.add_argument("-d", "--data", type=str, default="config/coco.data", help="Path to data config file (.data)")
+    # 用add_argument()函数来添加程序参数信息。通常，这些调用指定Argument如何获得命令行字符串并将其转换为对象。这些信息在parse_args()调用时被存储和使用
+    # 也可以说下面设置的是对象的属性
+    # 这里创建了一个解析器对象，ArgumentParser对象包含将命令行解析成Python数据类型所需的全部信息
+    # 这里前面的-m和--model代表是一个选项，当parser.add_argument()被调用，选项会以-前缀识别，剩下的参数则会被假定为未知参数,前面的那个简写可以用来调用
+    parser.add_argument("-m", "--model", type=str, default="config/yolov3.cfg", help="Path to model definition file (.cfg)")  # 这个变量是模型参数存放的位置
+    parser.add_argument("-d", "--data", type=str, default="config/coco.data", help="Path to data config file (.data)")  # 这个变量是数据参数存放的位置
     parser.add_argument("-e", "--epochs", type=int, default=300, help="Number of epochs")
     parser.add_argument("-v", "--verbose", action='store_true', help="Makes the training more verbose")
     parser.add_argument("--n_cpu", type=int, default=8, help="Number of cpu threads to use during batch generation")
-    parser.add_argument("--pretrained_weights", type=str, help="Path to checkpoint file (.weights or .pth). Starts training from checkpoint model")
-    parser.add_argument("--checkpoint_interval", type=int, default=1, help="Interval of epochs between saving model weights")
-    parser.add_argument("--evaluation_interval", type=int, default=1, help="Interval of epochs between evaluations on validation set")
-    parser.add_argument("--multiscale_training", action="store_true", help="Allow multi-scale training")
-    parser.add_argument("--iou_thres", type=float, default=0.5, help="Evaluation: IOU threshold required to qualify as detected")
-    parser.add_argument("--conf_thres", type=float, default=0.1, help="Evaluation: Object confidence threshold")
-    parser.add_argument("--nms_thres", type=float, default=0.5, help="Evaluation: IOU threshold for non-maximum suppression")
-    parser.add_argument("--logdir", type=str, default="logs", help="Directory for training log files (e.g. for TensorBoard)")
+    parser.add_argument("--pretrained_weights", type=str, help="Path to checkpoint file (.weights or .pth). Starts training from checkpoint model")  # 这里是预训练权重的位置，如果是在命令行中没有，还没有默认值的话就是none
+    parser.add_argument("--checkpoint_interval", type=int, default=1, help="Interval of epochs between saving model weights")  # 隔几个epoch保存我们训练出来的权重
+    parser.add_argument("--evaluation_interval", type=int, default=1, help="Interval of epochs between evaluations on validation set")  # 这里是说隔多少个epoch来在验证集上验证一下
+    parser.add_argument("--multiscale_training", action="store_true", help="Allow multi-scale training")  # 这里的action=store_true，表示的意思是，如果在命令行中有指出这个参数的话，那就为true，如果没有指出这个参数的话，那就是false
+    parser.add_argument("--iou_thres", type=float, default=0.5, help="Evaluation: IOU threshold required to qualify as detected")  # 判断为物体的IOU阈值（这里的验证是有groundtruth的嘛？这样才能解释IOU这个事儿）
+    parser.add_argument("--conf_thres", type=float, default=0.1, help="Evaluation: Object confidence threshold")  # 判断为物体的置信度阈值
+    parser.add_argument("--nms_thres", type=float, default=0.5, help="Evaluation: IOU threshold for non-maximum suppression")  # 在进行非极大值抑制的时候的IOU阈值和判断为物体时候的阈值是一样的嘛？
+    parser.add_argument("--logdir", type=str, default="logs", help="Directory for training log files (e.g. for TensorBoard)")  # 来计算训练日志
     parser.add_argument("--seed", type=int, default=-1, help="Makes results reproducable. Set -1 to disable.")
+    # ArgumentParser通过parse_args()方法来解析参数。它检查命令行，把每个参数转换为适当的类型然后调用相应的操作。这个函数返回的是一个命名空间，里面有各种各样的变量，我们需要什么，就从里面调用什么
     args = parser.parse_args()
     print(f"Command line arguments: {args}")
 
@@ -87,11 +92,11 @@ def run():
     os.makedirs("checkpoints", exist_ok=True)
 
     # Get data configuration
-    data_config = parse_data_config(args.data)
-    train_path = data_config["train"]
-    valid_path = data_config["valid"]
-    class_names = load_classes(data_config["names"])
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    data_config = parse_data_config(args.data)  # 把.data文件的地址送进去之后，返回一个包含其中信息的字典
+    train_path = data_config["train"]  # 从字典中取出来一个txt文件的地址，这个txt文件中存储的是用来训练的图像的地址，每一个图像的地址为一行
+    valid_path = data_config["valid"]  # 从字典中取出来一个txt文件的地址，这个txt文件中存储的是用来验证的图像的地址，每一个图像的地址为一行
+    class_names = load_classes(data_config["names"])  # 此处返回的是一个列表，其中每个元素都是names中的每一行（且元素末尾没有\n）
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # 选择运行的设备
 
     # ############
     # Create model

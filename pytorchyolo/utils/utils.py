@@ -43,12 +43,12 @@ def to_cpu(tensor):
     return tensor.detach().cpu()
 
 
-def load_classes(path):
+def load_classes(path):  # 读进来一个文件的地址
     """
     Loads class labels at 'path'
     """
-    with open(path, "r") as fp:
-        names = fp.read().splitlines()
+    with open(path, "r") as fp:  # 打开文件作为一个对象
+        names = fp.read().splitlines()  # 把文件中的内容读进来之后，按照每行进行分割，得到一个列表(列表中的元素结尾是没有\n的)
     return names
 
 

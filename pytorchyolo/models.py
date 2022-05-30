@@ -145,7 +145,7 @@ class YOLOLayer(nn.Module):
         stride = img_size // x.size(2)
         self.stride = stride
         bs, _, ny, nx = x.shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
-        x = x.view(bs, self.num_anchors, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
+        x = x.view(bs, self.num_anchors, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()  # 相当于reshape操作
 
         if not self.training:  # inference
             if self.grid.shape[2:4] != x.shape[2:4]:
@@ -182,12 +182,12 @@ class Darknet(nn.Module):
         for i, (module_def, module) in enumerate(zip(self.module_defs, self.module_list)):
             if module_def["type"] in ["convolutional", "upsample", "maxpool"]:
                 x = module(x)
-            elif module_def["type"] == "route":
+            elif module_def["type"] == "route":  # 特征图进行拼接的一个操作
                 combined_outputs = torch.cat([layer_outputs[int(layer_i)] for layer_i in module_def["layers"].split(",")], 1)
                 group_size = combined_outputs.shape[1] // int(module_def.get("groups", 1))
                 group_id = int(module_def.get("group_id", 0))
                 x = combined_outputs[:, group_size * group_id : group_size * (group_id + 1)] # Slice groupings used by yolo v4
-            elif module_def["type"] == "shortcut":
+            elif module_def["type"] == "shortcut":  # 残差连接，维度不变，特征值做加法
                 layer_i = int(module_def["from"])
                 x = layer_outputs[-1] + layer_outputs[layer_i]
             elif module_def["type"] == "yolo":

@@ -57,20 +57,20 @@ class ImageFolder(Dataset):
 
 class ListDataset(Dataset):
     def __init__(self, list_path, img_size=416, multiscale=True, transform=None):
-        with open(list_path, "r") as file:
-            self.img_files = file.readlines()
+        with open(list_path, "r") as file:  # 打开一个txt文件
+            self.img_files = file.readlines()  # 把txt文件中的内容读入进来，这个txt中的内容，每一行是一个图片的地址
 
-        self.label_files = []
-        for path in self.img_files:
-            image_dir = os.path.dirname(path)
-            label_dir = "labels".join(image_dir.rsplit("images", 1))
+        self.label_files = []  # 每一个元素都是一个标签地址
+        for path in self.img_files:  # 这个循环的目的是由每个图片的地址找到每个图片的groundtruth的地址
+            image_dir = os.path.dirname(path)  # 这里是图片所在的文件夹
+            label_dir = "labels".join(image_dir.rsplit("images", 1))  # 这里表示的是标签所在的文件夹把image_dir字符串用images分隔开成一个列表（这个列表中存放的是被images分割开来的部分）之后，用lables连接起来
             assert label_dir != image_dir, \
-                f"Image path must contain a folder named 'images'! \n'{image_dir}'"
-            label_file = os.path.join(label_dir, os.path.basename(path))
-            label_file = os.path.splitext(label_file)[0] + '.txt'
-            self.label_files.append(label_file)
+                "Image path must contain a folder named 'images'! \n{}".format(image_dir)  # 结果为非0时候不进行任何操作。
+            label_file = os.path.join(label_dir, os.path.basename(path))  # 这里得出的是每一个标签的
+            label_file = os.path.splitext(label_file)[0] + '.txt'  # 本行的前部分是把后缀去掉，最终得到的就是我们目前处理的这个图片的groundtruth文件的地址
+            self.label_files.append(label_file)  # 每一个存放标签的txt文件的地址加到label_files这个列表中（这里也向我们揭示了，labels中的txt文件是一个txt文件对应一张图片的，而且名字应该对应还有后缀不一样）
 
-        self.img_size = img_size
+        self.img_size = img_size  # 是后面要resize成这个尺寸么？
         self.max_objects = 100
         self.multiscale = multiscale
         self.min_size = self.img_size - 3 * 32
@@ -78,7 +78,7 @@ class ListDataset(Dataset):
         self.batch_count = 0
         self.transform = transform
 
-    def __getitem__(self, index):
+    def __getitem__(self, index):  # 想通过索引来访问对象中的元素的时候，会调用这个函数
 
         # ---------
         #  Image
@@ -96,10 +96,10 @@ class ListDataset(Dataset):
         #  Label
         # ---------
         try:
-            label_path = self.label_files[index % len(self.img_files)].rstrip()
+            label_path = self.label_files[index % len(self.img_files)].rstrip()  # 获得标签所在位置
 
             # Ignore warning if file is empty
-            with warnings.catch_warnings():
+            with warnings.catch_warnings():  # 如果要是没有这个警告的话那就不执行了么？
                 warnings.simplefilter("ignore")
                 boxes = np.loadtxt(label_path).reshape(-1, 5)
         except Exception:
